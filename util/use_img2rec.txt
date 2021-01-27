@@ -1,0 +1,5 @@
+python im2rec.py --list --recursive --test-ratio=0.2 --train-ratio=0.7 ../../.mxnet/datasets/ITW/ ../../.mxnet/datasets/ITW_row/
+python im2rec.py --num-thread=16 ../../.mxnet/datasets/ITW/ ../../.mxnet/datasets/ITW_row/
+
+
+
