@@ -29,9 +29,6 @@ class ResidualBlock(nn.HybridBlock):
         self.conv2 = ConvBlock(channels, kernel_size=3, strides=1, padding=1)
 
     def hybrid_forward(self, F, x):
-        # print('F: ', F)
-        # print('x: ', x.shape, type(x))
-
         block = self.conv1(x)
         block = self.conv2(block)
         out = block + x
@@ -61,8 +58,7 @@ class DarkNet(nn.HybridBlock):
         self.fc = nn.Dense(self.num_classes)
 
     def hybrid_forward(self, F, x):
-        x_top = x[:, :, 0:self.input_size // 2]
-        x_bottom = x[:, :, self.input_size // 2:self.input_size]
+        x_top, x_bottom = F.split(x, axis=2, num_outputs=2)
 
         # DarkNet53
         x = self.input_layer(x)
@@ -89,10 +85,7 @@ class DarkNet(nn.HybridBlock):
         layer.add(ConvBlock(channels, kernel_size=3, strides=2, padding=1))
 
         for i in range(layer_size):
-            conv1 = ConvBlock(channels / 2, kernel_size=1, strides=1, padding=0)
-            conv2 = ConvBlock(channels, kernel_size=3, strides=1, padding=1)
-            residual = ResidualBlock(channels)
-            layer.add(conv1, conv2, residual)
+            layer.add(ResidualBlock(channels))
 
         return layer
 
