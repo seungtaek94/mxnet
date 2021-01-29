@@ -33,9 +33,6 @@ class ResidualBlock(nn.HybridBlock):
         self.conv2 = ConvBlock(channels, kernel_size=3, strides=1, padding=1)
 
     def hybrid_forward(self, F, x):
-        # print('F: ', F)
-        # print('x: ', x.shape, type(x))
-
         block = self.conv1(x)
         block = self.conv2(block)
         out = block + x
@@ -70,10 +67,6 @@ class DarkNet(nn.HybridBlock):
         x = self.layer5(x)
         x = self.global_avg_pool(x)
         x = self.fc(x)
-
-        # viz.plot_image(x)
-        plt.show()
-
         return x
 
     def make_layer(self, channels, layer_size=1):
@@ -82,10 +75,7 @@ class DarkNet(nn.HybridBlock):
         layer.add(ConvBlock(channels, kernel_size=3, strides=2, padding=1))
 
         for i in range(layer_size):
-            conv1 = ConvBlock(channels / 2, kernel_size=1, strides=1, padding=0)
-            conv2 = ConvBlock(channels, kernel_size=3, strides=1, padding=1)
-            residual = ResidualBlock(channels)
-            layer.add(conv1, conv2, residual)
+            layer.add(ResidualBlock(channels))
 
         return layer
 

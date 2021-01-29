@@ -1,7 +1,9 @@
-import os, argparse, time, logging
+import os, time
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
+
+import argparse, time, logging
 
 import numpy as np
 import mxnet as mx
@@ -9,10 +11,9 @@ import math
 
 from mxnet import gluon, nd
 from mxnet import autograd as ag
-from darknet import DarkNet
+from cspdarknet53 import DarkNet
 
 from gluoncv.utils import makedirs, TrainingHistory
-
 
 
 # CLI
@@ -24,13 +25,13 @@ def parse_args():
     parser.add_argument('--num-gpus', type=int, default=4, help='number of gpus to use.')
     parser.add_argument('--model', type=str, default='darknet', help='model to use. options are resnet and wrn. default is resnet.')
     parser.add_argument('-j', '--num-workers', dest='num_workers', default=16, type=int, help='number of preprocessing workers')
-    parser.add_argument('--num-epochs', type=int, default=100, help='number of training epochs.')
+    parser.add_argument('--num-epochs', type=int, default=150, help='number of training epochs.')
     parser.add_argument('--lr', type=float, default=0.01, help='learning rate. default is 0.1.')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum value for optimizer, default is 0.9.')
     parser.add_argument('--wd', type=float, default=0.0001, help='weight decay rate. default is 0.0001.')
     parser.add_argument('--lr-decay', type=float, default=0.1, help='decay rate of learning rate. default is 0.1.')
     parser.add_argument('--lr-decay-period', type=int, default=0, help='period in epoch for learning rate decays. default is 0 (has no effect).')
-    parser.add_argument('--lr-decay-epoch', type=str, default='40,60', help='epochs at which learning rate decays. default is 40,60.')
+    parser.add_argument('--lr-decay-epoch', type=str, default='80,120', help='epochs at which learning rate decays. default is 40,60.')
 
     parser.add_argument('--save-period', type=int, default=5, help='period in epoch of model saving.')
     parser.add_argument('--save-dir', type=str, default='params', help='directory of saved models')
@@ -43,15 +44,15 @@ def parse_args():
     parser.add_argument('--resume-states', type=str, default='', help='path of trainer state to load from.')
 
     # Dataset
-    parser.add_argument('--dataset-path', type=str, default='ITW_rec', help='root folder should be .mxnet/datasets/')
+    parser.add_argument('--dataset-path', type=str, default='ITW_rec_origin', help='root folder should be .mxnet/datasets/')
     parser.add_argument('--img-size', type=int, default=224, help='image size')
     parser.add_argument('--crop-ratio', type=float, default=0.875, help='Crop ratio during validation. default is 0.875')
 
     # Logging
     parser.add_argument('--log-interval', type=int, default=10, help='Number of batches to wait before logging.')
     parser.add_argument('--save-plot-dir', type=str, default='.', help='the path to save the history plot')
-    parser.add_argument('--logging-file', type=str, default='train_darknet53.log', help='name of training log file')
-    parser.add_argument('--model-name', type=str, default='darknet53', help='model name for save exp')
+    parser.add_argument('--logging-file', type=str, default='train_cspdarknet53.log', help='name of training log file')
+    parser.add_argument('--model-name', type=str, default='cspdarknet53', help='model name for save exp')
     opt = parser.parse_args()
     return opt
 
@@ -67,8 +68,6 @@ def get_data_rec(opt, ctx):
     lighting_param = 0.1
     crop_ratio = opt.crop_ratio if opt.crop_ratio > 0 else 0.875
     resize = int(math.ceil(img_size / crop_ratio))
-
-    # Normalization
     mean_rgb = [123.68, 116.779, 103.939]
     std_rgb = [58.393, 57.12, 57.375]
 
