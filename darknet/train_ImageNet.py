@@ -246,6 +246,9 @@ def main():
         if opt.resume_states != '':
             trainer.load_states(opt.resume_states)
 
+
+        # Sparse_label == False : Label should contaion probability distribution
+        # Sparse_label == True  : Label should be integer
         L = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=True)
 
         best_val_score = 1
