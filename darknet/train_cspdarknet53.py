@@ -1,7 +1,7 @@
 import os, time
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 import argparse, time, logging
 
@@ -23,15 +23,21 @@ def parse_args():
     # Training
     parser.add_argument('--batch-size', type=int, default=128, help='training batch size per device (CPU/GPU).')
     parser.add_argument('--num-gpus', type=int, default=4, help='number of gpus to use.')
-    parser.add_argument('--model', type=str, default='darknet', help='model to use. options are resnet and wrn. default is resnet.')
-    parser.add_argument('-j', '--num-workers', dest='num_workers', default=16, type=int, help='number of preprocessing workers')
+    parser.add_argument('--model', type=str, default='darknet',
+                        help='model to use. options are resnet and wrn. default is resnet.')
+    parser.add_argument('-j', '--num-workers', dest='num_workers', default=16, type=int,
+                        help='number of preprocessing workers')
     parser.add_argument('--num-epochs', type=int, default=150, help='number of training epochs.')
     parser.add_argument('--lr', type=float, default=0.01, help='learning rate. default is 0.1.')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum value for optimizer, default is 0.9.')
     parser.add_argument('--wd', type=float, default=0.0001, help='weight decay rate. default is 0.0001.')
     parser.add_argument('--lr-decay', type=float, default=0.1, help='decay rate of learning rate. default is 0.1.')
-    parser.add_argument('--lr-decay-period', type=int, default=0, help='period in epoch for learning rate decays. default is 0 (has no effect).')
-    parser.add_argument('--lr-decay-epoch', type=str, default='80,120', help='epochs at which learning rate decays. default is 40,60.')
+    parser.add_argument('--lr-decay-period', type=int, default=0,
+                        help='period in epoch for learning rate decays. default is 0 (has no effect).')
+    parser.add_argument('--lr-decay-epoch', type=str, default='80,120',
+                        help='epochs at which learning rate decays. default is 40,60.')
+    parser.add_argument('--label-smoothing', type=bool, default=False,
+                        help='use label smoothing or not in training. default is false.')
 
     parser.add_argument('--save-period', type=int, default=5, help='period in epoch of model saving.')
     parser.add_argument('--save-dir', type=str, default='params', help='directory of saved models')
@@ -44,9 +50,11 @@ def parse_args():
     parser.add_argument('--resume-states', type=str, default='', help='path of trainer state to load from.')
 
     # Dataset
-    parser.add_argument('--dataset-path', type=str, default='ITW_rec_origin', help='root folder should be .mxnet/datasets/')
+    parser.add_argument('--dataset-path', type=str, default='ITW_rec_origin',
+                        help='root folder should be .mxnet/datasets/')
     parser.add_argument('--img-size', type=int, default=224, help='image size')
-    parser.add_argument('--crop-ratio', type=float, default=0.875, help='Crop ratio during validation. default is 0.875')
+    parser.add_argument('--crop-ratio', type=float, default=0.875,
+                        help='Crop ratio during validation. default is 0.875')
 
     # Logging
     parser.add_argument('--log-interval', type=int, default=10, help='Number of batches to wait before logging.')
@@ -56,10 +64,11 @@ def parse_args():
     opt = parser.parse_args()
     return opt
 
+
 def get_data_rec(opt, ctx):
     dataset_path = opt.dataset_path
     batch_size = opt.batch_size
-    img_size= opt.img_size
+    img_size = opt.img_size
     num_workers = opt.num_workers
     rec_path = os.path.join('/home/seungtaek/.mxnet/datasets/', dataset_path)
 
@@ -121,6 +130,7 @@ def get_data_rec(opt, ctx):
 
     return train_data, val_data, batch_fn
 
+
 def main():
     now = time.localtime()
     now = f'{now.tm_year}{now.tm_mon:0>2}{now.tm_mday:0>2}{now.tm_hour:0>2}{now.tm_min:0>2}{now.tm_sec:0>2}'
@@ -137,7 +147,7 @@ def main():
     logger.info(opt)
 
     batch_size = opt.batch_size
-    classes = 5 # {sunny, cloudy, foggy, rain, snow}
+    classes = 5  # {sunny, cloudy, foggy, rain, snow}
     num_gpus = opt.num_gpus
     batch_size *= max(1, num_gpus)
     context = [mx.gpu(i) for i in range(num_gpus)] if num_gpus > 0 else [mx.cpu()]
@@ -150,7 +160,7 @@ def main():
     net = DarkNet(num_classes=classes, input_size=opt.img_size)
 
     if opt.resume_from:
-        net.load_parameters(opt.resume_from, ctx = context)
+        net.load_parameters(opt.resume_from, ctx=context)
     optimizer = opt.optimizer
 
     save_period = opt.save_period
@@ -166,20 +176,25 @@ def main():
     # load dataset
     train_data, val_data, batch_fn = get_data_rec(opt, context)
 
+    def smooth(label, classes, eta=0.1):
+        if isinstance(label, nd.NDArray):
+            label = [label]
+        smoothed = []
+        for l in label:
+            res = l.one_hot(classes, on_value=1 - eta + eta / classes, off_value=eta / classes)
+            smoothed.append(res)
+        return smoothed
+
     def test(ctx, val_data):
         val_data.reset()
-        loss_fn = gluon.loss.SoftmaxCrossEntropyLoss()
         metric = mx.metric.Accuracy()
 
         for i, batch in enumerate(val_data):
             data, label = batch_fn(batch, ctx)
             outputs = [net(X) for X in data]
-            val_loss = [loss_fn(yhat, y) for yhat, y in zip(outputs, label)]
-
-            #val_loss = (val_loss + sum([l.sum().asscalar() for l in val_loss])) / (i + 1)
             metric.update(label, outputs)
 
-        return metric.get() # [0], metric.get()[1], val_loss
+        return metric.get()
 
     def train(ctx):
         if isinstance(ctx, mx.Context):
@@ -190,13 +205,18 @@ def main():
         else:
             net.load_parameters(opt.resume_params, ctx=ctx)
 
-        trainer = gluon.Trainer(net.collect_params(), optimizer, {'learning_rate': opt.lr, 'wd': opt.wd, 'momentum': opt.momentum})
+        trainer = gluon.Trainer(net.collect_params(), optimizer,
+                                {'learning_rate': opt.lr, 'wd': opt.wd, 'momentum': opt.momentum})
 
         if opt.resume_states != '':
             trainer.load_states(opt.resume_states)
 
-
-        loss_fn = gluon.loss.SoftmaxCrossEntropyLoss()
+        # Sparse_label == True  : Label should be integer
+        # Sparse_label == False : Label should contaion probability distribution
+        if opt.label_smoothing:
+            loss_fn = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=False)
+        else:
+            loss_fn = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=True)
 
         metric = mx.metric.Accuracy()
         train_metric = mx.metric.Accuracy()
@@ -214,13 +234,18 @@ def main():
             metric.reset()
             train_loss = 0
             btic = time.time()
+            estimate_time = 0.0
 
             if epoch == lr_decay_epoch[lr_decay_count]:
-                trainer.set_learning_rate(trainer.learning_rate*lr_decay)
+                trainer.set_learning_rate(trainer.learning_rate * lr_decay)
                 lr_decay_count += 1
 
             for i, batch in enumerate(train_data):
                 data, label = batch_fn(batch, ctx)
+
+                if opt.label_smoothing:
+                    hard_label = label
+                    label = smooth(label, classes)
 
                 with ag.record():
                     output = [net(X) for X in data]
@@ -229,18 +254,27 @@ def main():
                 for l in loss:
                     l.backward()
                 trainer.step(batch_size)
-                train_metric.update(label, output)
+
+                if opt.label_smoothing:
+                    train_metric.update(hard_label, output)
+                else:
+                    train_metric.update(label, output)
 
                 iteration += 1
                 train_loss = (train_loss + sum([l.sum().asscalar() for l in loss])) / iteration
 
+                training_Speed = batch_size * opt.log_interval / (time.time() - btic)
+
+                if epoch != 0:
+                    estimate_time = (time.time() - btic) * max_batch * (opt.num_epochs - epoch - 1) / 3600
 
                 if opt.log_interval and not (i + 1) % opt.log_interval:
                     if i > max_batch: max_batch = i
                     train_metric_name, train_metric_score = train_metric.get()
-                    logger.info('Epoch[%d/%d] Batch [%d/%d]\tSpeed: %f samples/sec\ttrain_loss=%f\t%s=%f\tlr=%f' % (
-                        epoch, opt.num_epochs, i, max_batch, batch_size * opt.log_interval / (time.time() - btic),
-                        train_loss, train_metric_name, train_metric_score, trainer.learning_rate))
+                    logger.info(
+                        'Epoch[%d/%d] Batch [%d/%d]\tSpeed: %f samples/sec\ttrain_loss=%f\t%s=%f\tlr=%f\tet=%f hour' % (
+                            epoch, opt.num_epochs, i, max_batch, training_Speed, train_loss, train_metric_name,
+                            train_metric_score, trainer.learning_rate, estimate_time))
                     btic = time.time()
 
             name, train_acc = train_metric.get()
@@ -255,17 +289,18 @@ def main():
                 trainer.save_states(f'params/{model_name}_{now}_{epoch:0>3}(best).states')
 
             logging.info('[Epoch %d] train=%f val=%f time: %f' %
-                (epoch, train_acc, val_acc, time.time()-tic))
+                         (epoch, train_acc, val_acc, time.time() - tic))
 
             if save_period and save_dir and (epoch + 1) % save_period == 0:
                 net.save_parameters(f'params/{model_name}_{now}_{epoch:0>3}.params')
                 trainer.save_states(f'params/{model_name}_{now}_{epoch:0>3}.states')
 
         if save_period and save_dir:
-            net.save_parameters(f'params/{model_name}_{now}_{epoch-1:0>3}.params')
-            trainer.save_states(f'params/{model_name}_{now}_{epoch-1:0>3}.states')
+            net.save_parameters(f'params/{model_name}_{now}_{epoch - 1:0>3}.params')
+            trainer.save_states(f'params/{model_name}_{now}_{epoch - 1:0>3}.states')
 
     train(context)
+
 
 if __name__ == '__main__':
     main()
