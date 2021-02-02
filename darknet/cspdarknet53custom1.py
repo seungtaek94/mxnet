@@ -4,8 +4,6 @@ from mxnet.gluon import nn
 ConvBlock
 [Conv2d ─ BN ─ ACTIVATION]
 '''
-
-
 def ConvBlock(channels, kernel_size, strides, padding, use_bias=False, activation='leaky'):
     block = nn.HybridSequential()
     block.add(nn.Conv2D(int(channels), kernel_size=kernel_size, strides=strides, padding=padding, use_bias=use_bias))
@@ -26,8 +24,6 @@ RedidualBlock
 [   ┌───────────────────────┐    ]
 [In ┴ Conv(1x1) ─ Conv(3x3) ┴ out]
 '''
-
-
 class ResidualBlock(nn.HybridBlock):
     def __init__(self, channels):
         super(ResidualBlock, self).__init__()
@@ -84,11 +80,12 @@ class DarkNet(nn.HybridBlock):
 
         self.input_layer = nn.Conv2D(channels=32, kernel_size=3, strides=1, padding=1, use_bias=False)
 
-        self.layer1 = CSP(64, 1)
-        self.layer2 = CSP(128, 2)
+        self.layer1 = CSP(64, 4)
+        self.layer2 = CSP(128, 4)
         self.layer3 = CSP(256, 8)
         self.layer4 = CSP(512, 8)
         self.layer5 = CSP(1024, 4)
+        self.layer6 = CSP(2048, 2)
 
         self.global_avg_pool = nn.GlobalAvgPool2D()
         self.fc = nn.Dense(self.num_classes)
@@ -100,6 +97,7 @@ class DarkNet(nn.HybridBlock):
         x = self.layer3(x)
         x = self.layer4(x)
         x = self.layer5(x)
+        x = self.layer6(x)
         x = self.global_avg_pool(x)
         x = self.fc(x)
 
