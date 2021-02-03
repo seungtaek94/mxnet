@@ -7,7 +7,7 @@
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_conv0_weight", 
+      "name": "hybridsequential2_conv0_weight", 
       "attrs": {
         "__dtype__": "0", 
         "__lr_mult__": "1.0", 
@@ -19,7 +19,7 @@
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_conv0_bias", 
+      "name": "hybridsequential2_conv0_bias", 
       "attrs": {
         "__dtype__": "0", 
         "__init__": "zeros", 
@@ -32,7 +32,7 @@
     }, 
     {
       "op": "Convolution", 
-      "name": "hybridsequential1_conv0_fwd", 
+      "name": "hybridsequential2_conv0_fwd", 
       "attrs": {
         "dilate": "(1, 1)", 
         "kernel": "(5, 5)", 
@@ -47,13 +47,13 @@
     }, 
     {
       "op": "Activation", 
-      "name": "hybridsequential1_conv0_relu_fwd", 
+      "name": "hybridsequential2_conv0_relu_fwd", 
       "attrs": {"act_type": "relu"}, 
       "inputs": [[3, 0, 0]]
     }, 
     {
       "op": "Pooling", 
-      "name": "hybridsequential1_pool0_fwd", 
+      "name": "hybridsequential2_pool0_fwd", 
       "attrs": {
         "global_pool": "False", 
         "kernel": "(2, 2)", 
@@ -67,7 +67,7 @@
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_conv1_weight", 
+      "name": "hybridsequential2_conv1_weight", 
       "attrs": {
         "__dtype__": "0", 
         "__lr_mult__": "1.0", 
@@ -79,7 +79,7 @@
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_conv1_bias", 
+      "name": "hybridsequential2_conv1_bias", 
       "attrs": {
         "__dtype__": "0", 
         "__init__": "zeros", 
@@ -92,7 +92,7 @@
     }, 
     {
       "op": "Convolution", 
-      "name": "hybridsequential1_conv1_fwd", 
+      "name": "hybridsequential2_conv1_fwd", 
       "attrs": {
         "dilate": "(1, 1)", 
         "kernel": "(3, 3)", 
@@ -107,13 +107,13 @@
     }, 
     {
       "op": "Activation", 
-      "name": "hybridsequential1_conv1_relu_fwd", 
+      "name": "hybridsequential2_conv1_relu_fwd", 
       "attrs": {"act_type": "relu"}, 
       "inputs": [[8, 0, 0]]
     }, 
     {
       "op": "Pooling", 
-      "name": "hybridsequential1_pool1_fwd", 
+      "name": "hybridsequential2_pool1_fwd", 
       "attrs": {
         "global_pool": "False", 
         "kernel": "(2, 2)", 
@@ -127,12 +127,12 @@
     }, 
     {
       "op": "Flatten", 
-      "name": "hybridsequential1_flatten0_flatten0", 
+      "name": "hybridsequential2_flatten0_flatten0", 
       "inputs": [[10, 0, 0]]
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_dense0_weight", 
+      "name": "hybridsequential2_dense0_weight", 
       "attrs": {
         "__dtype__": "0", 
         "__lr_mult__": "1.0", 
@@ -144,7 +144,7 @@
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_dense0_bias", 
+      "name": "hybridsequential2_dense0_bias", 
       "attrs": {
         "__dtype__": "0", 
         "__init__": "zeros", 
@@ -157,7 +157,7 @@
     }, 
     {
       "op": "FullyConnected", 
-      "name": "hybridsequential1_dense0_fwd", 
+      "name": "hybridsequential2_dense0_fwd", 
       "attrs": {
         "flatten": "True", 
         "no_bias": "False", 
@@ -167,13 +167,13 @@
     }, 
     {
       "op": "Activation", 
-      "name": "hybridsequential1_dense0_relu_fwd", 
+      "name": "hybridsequential2_dense0_relu_fwd", 
       "attrs": {"act_type": "relu"}, 
       "inputs": [[14, 0, 0]]
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_dense1_weight", 
+      "name": "hybridsequential2_dense1_weight", 
       "attrs": {
         "__dtype__": "0", 
         "__lr_mult__": "1.0", 
@@ -185,7 +185,7 @@
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_dense1_bias", 
+      "name": "hybridsequential2_dense1_bias", 
       "attrs": {
         "__dtype__": "0", 
         "__init__": "zeros", 
@@ -198,7 +198,7 @@
     }, 
     {
       "op": "FullyConnected", 
-      "name": "hybridsequential1_dense1_fwd", 
+      "name": "hybridsequential2_dense1_fwd", 
       "attrs": {
         "flatten": "True", 
         "no_bias": "False", 
@@ -208,13 +208,13 @@
     }, 
     {
       "op": "Activation", 
-      "name": "hybridsequential1_dense1_relu_fwd", 
+      "name": "hybridsequential2_dense1_relu_fwd", 
       "attrs": {"act_type": "relu"}, 
       "inputs": [[18, 0, 0]]
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_dense2_weight", 
+      "name": "hybridsequential2_dense2_weight", 
       "attrs": {
         "__dtype__": "0", 
         "__lr_mult__": "1.0", 
@@ -226,7 +226,7 @@
     }, 
     {
       "op": "null", 
-      "name": "hybridsequential1_dense2_bias", 
+      "name": "hybridsequential2_dense2_bias", 
       "attrs": {
         "__dtype__": "0", 
         "__init__": "zeros", 
@@ -239,7 +239,7 @@
     }, 
     {
       "op": "FullyConnected", 
-      "name": "hybridsequential1_dense2_fwd", 
+      "name": "hybridsequential2_dense2_fwd", 
       "attrs": {
         "flatten": "True", 
         "no_bias": "False", 
@@ -288,5 +288,5 @@
     25
   ], 
   "heads": [[22, 0, 0]], 
-  "attrs": {"mxnet_version": ["int", 10700]}
+  "attrs": {"mxnet_version": ["int", 10600]}
 }

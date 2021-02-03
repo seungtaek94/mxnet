@@ -1,7 +1,7 @@
 from mxnet.gluon import nn
 
 
-def ConvBlock(channels, kernel_size, strides, padding, dilation=1,use_bias=False, activation='leaky'):
+def ConvBlock(channels, kernel_size, strides, padding, dilation=1, use_bias=False, activation='swish'):
     block = nn.HybridSequential()
     block.add(nn.Conv2D(int(channels), kernel_size=kernel_size, dilation=dilation,strides=strides, padding=padding, use_bias=use_bias))
 
@@ -10,6 +10,8 @@ def ConvBlock(channels, kernel_size, strides, padding, dilation=1,use_bias=False
 
     if activation == 'leaky':
         block.add(nn.LeakyReLU(0.1))
+    elif activation == 'swish':
+        block.add(nn.Swish())
 
     return block
 

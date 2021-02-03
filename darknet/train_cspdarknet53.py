@@ -11,7 +11,7 @@ import math
 
 from mxnet import gluon, nd
 from mxnet import autograd as ag
-from cspdarknet53 import DarkNet
+from cspdarknet53custom3 import DarkNet
 
 from gluoncv.utils import makedirs, TrainingHistory
 
@@ -21,7 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a model for image classification.')
 
     # Training
-    parser.add_argument('--batch-size', type=int, default=128, help='training batch size per device (CPU/GPU).')
+    parser.add_argument('--batch-size', type=int, default=64, help='training batch size per device (CPU/GPU).')
     parser.add_argument('--num-gpus', type=int, default=4, help='number of gpus to use.')
     parser.add_argument('--model', type=str, default='darknet',
                         help='model to use. options are resnet and wrn. default is resnet.')
@@ -60,7 +60,7 @@ def parse_args():
     parser.add_argument('--log-interval', type=int, default=10, help='Number of batches to wait before logging.')
     parser.add_argument('--save-plot-dir', type=str, default='.', help='the path to save the history plot')
     parser.add_argument('--logging-file', type=str, default='train_cspdarknet53.log', help='name of training log file')
-    parser.add_argument('--model-name', type=str, default='cspdarknet53', help='model name for save exp')
+    parser.add_argument('--model-name', type=str, default='cspdarknet53cus3', help='model name for save exp')
     opt = parser.parse_args()
     return opt
 
@@ -265,16 +265,14 @@ def main():
 
                 training_Speed = batch_size * opt.log_interval / (time.time() - btic)
 
-                if epoch != 0:
-                    estimate_time = (time.time() - btic) * max_batch * (opt.num_epochs - epoch - 1) / 3600
 
                 if opt.log_interval and not (i + 1) % opt.log_interval:
                     if i > max_batch: max_batch = i
                     train_metric_name, train_metric_score = train_metric.get()
                     logger.info(
-                        'Epoch[%d/%d] Batch [%d/%d]\tSpeed: %f samples/sec\ttrain_loss=%f\t%s=%f\tlr=%f\tet=%f hour' % (
+                        'Epoch[%d/%d] Batch [%d/%d]\tSpeed: %f samples/sec\ttrain_loss=%f\t%s=%f\tlr=%f' % (
                             epoch, opt.num_epochs, i, max_batch, training_Speed, train_loss, train_metric_name,
-                            train_metric_score, trainer.learning_rate, estimate_time))
+                            train_metric_score, trainer.learning_rate))
                     btic = time.time()
 
             name, train_acc = train_metric.get()

@@ -68,11 +68,16 @@ def parse_args():
 class Trainer():
     def __init__(self, opt, net, ctx):
         super(Trainer, self).__init__()
-        
+
         self.opt = opt
         self.net = net
         self.ctx = ctx
-    
+
+    def batch_fn(self, batch, ctx):
+        data = gluon.utils.split_and_load(batch.data[0], ctx_list=ctx, batch_axis=0)
+        label = gluon.utils.split_and_load(batch.label[0], ctx_list=ctx, batch_axis=0)
+        return data, label
+
     def get_data_rec(self):
         dataset_path = self.opt.dataset_path
         batch_size = self.opt.batch_size
@@ -88,10 +93,6 @@ class Trainer():
         mean_rgb = [123.68, 116.779, 103.939]
         std_rgb = [58.393, 57.12, 57.375]
 
-        def batch_fn(batch, ctx):
-            data = gluon.utils.split_and_load(batch.data[0], ctx_list=ctx, batch_axis=0)
-            label = gluon.utils.split_and_load(batch.label[0], ctx_list=ctx, batch_axis=0)
-            return data, label
 
         train_data = mx.io.ImageRecordIter(
             path_imgrec=os.path.join(rec_path, 'train.rec'),
@@ -136,25 +137,32 @@ class Trainer():
             std_b=std_rgb[2],
         )
 
-        return train_data, val_data, batch_fn
-    
-        
-    def val(self):
+        return train_data, val_data
+
+    def smooth(label, classes, eta=0.1):
+        if isinstance(label, nd.NDArray):
+            label = [label]
+        smoothed = []
+        for l in label:
+            res = l.one_hot(classes, on_value=1 - eta + eta / classes, off_value=eta / classes)
+            smoothed.append(res)
+        return smoothed
+
+    def val(self, val_data):
         val_data.reset()
         metric = mx.metric.Accuracy()
 
         for i, batch in enumerate(val_data):
-            data, label = batch_fn(batch, ctx)
+            data, label = self.batch_fn(batch, ctx)
             outputs = [net(X) for X in data]
             metric.update(label, outputs)
 
         return metric.get()
-        
+
     def run(self):
         now = time.localtime()
         now = f'{now.tm_year}{now.tm_mon:0>2}{now.tm_mday:0>2}{now.tm_hour:0>2}{now.tm_min:0>2}{now.tm_sec:0>2}'
 
-        
         model_name = self.opt.model_name
         filehandler = logging.FileHandler(f'log/{model_name}_{now}.log')
         streamhandler = logging.StreamHandler()
@@ -173,7 +181,7 @@ class Trainer():
 
         if self.opt.resume_from:
             net.load_parameters(opt.resume_from, ctx=ctx)
-            
+
         optimizer = self.opt.optimizer
 
         save_period = self.opt.save_period
@@ -187,8 +195,8 @@ class Trainer():
         plot_path = self.opt.save_plot_dir
 
         # load dataset
-        train_data, val_data, batch_fn = self.get_data_rec()
-        
+        train_data, val_data = self.get_data_rec()
+
         if isinstance(self.ctx, mx.Context):
             self.ctx = [self.ctx]
 
@@ -233,11 +241,11 @@ class Trainer():
                 lr_decay_count += 1
 
             for i, batch in enumerate(train_data):
-                data, label = batch_fn(batch, ctx)
+                data, label = self.batch_fn(batch, ctx)
 
                 if self.opt.label_smoothing:
                     hard_label = label
-                    label = smooth(label, classes)
+                    label = self.smooth(label, classes)
 
                 with ag.record():
                     output = [net(X) for X in data]
@@ -257,7 +265,6 @@ class Trainer():
 
                 training_Speed = batch_size * self.opt.log_interval / (time.time() - btic)
 
-
                 if self.opt.log_interval and not (i + 1) % self.opt.log_interval:
                     if i > max_batch: max_batch = i
                     train_metric_name, train_metric_score = train_metric.get()
@@ -268,7 +275,7 @@ class Trainer():
                     btic = time.time()
 
             name, train_acc = train_metric.get()
-            name, val_acc = test(ctx, val_data)
+            name, val_acc = self.val(ctx, val_data)
 
             history_acc.update([train_acc, val_acc, train_loss])
             history_acc.plot(save_path=f'graphs/{model_name}_{now}_{epoch:0>3}_acc_history.png')
@@ -289,17 +296,18 @@ class Trainer():
             net.save_parameters(f'params/{model_name}_{now}_{epoch - 1:0>3}.params')
             trainer.save_states(f'params/{model_name}_{now}_{epoch - 1:0>3}.states')
 
+
 if __name__ == '__main__':
     opt = parse_args()
-    
+
     batch_size = opt.batch_size
     classes = 5  # {sunny, cloudy, foggy, rain, snow}
     num_gpus = opt.num_gpus
     batch_size *= max(1, num_gpus)
     ctx = [mx.gpu(i) for i in range(num_gpus)] if num_gpus > 0 else [mx.cpu()]
     print(ctx)
-    
+
     net = DarkNet(num_classes=5, input_size=opt.img_size)
     trainer = Trainer(opt, net, ctx)
-    
+
     trainer.run()
